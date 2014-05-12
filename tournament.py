@@ -1,7 +1,9 @@
 __author__ = 'geekly'
 
 import string
+import json
 from random import shuffle
+from enum import Enum
 from itertools import zip_longest
 
 
@@ -11,32 +13,55 @@ def grouper(n, iterable, fillvalue=None):
     return zip_longest(*args, fillvalue=fillvalue)
 
 
-class Round(object):
-    def __init__(self, roundnum):
-        self._pairings = list()
-        self.roundnum = roundnum
-        pass
-
-    @property
-    def pairings(self):
-        return self._pairings
-
-    @pairings.setter
-    def pairings(self, pairings):
-        self._pairings = pairings
+class Result(Enum):
+    win = 1
+    lose = 0
+    tie = 0
 
 
 class Player(object):
-    def __init__(self, name):
+    def __init__(self, name="Bull Monkey"):
         self.name = name
+        self.results = list()
 
     def __str__(self):
         return self.name
 
+    def resultsummary(self):
+        """Add up the player results from the result list
+            summary = (tournament score, SOS, armypoints, controlpoints)
+        """
+        playersummary = [0, 0, 0, 0]
+        for roundresult in self.results:
+            playersummary[0] += roundresult.result.value
+            #playersummary[1] += roundresult.sos
+            playersummary[2] += roundresult.armypoints
+            playersummary[3] += roundresult.controlpoints
+
+        #todo: calcualate SOS
+
+        return playersummary
+
+
 class PlayerResult(object):
-    def __init__(self, player):
-        self._player = player
-        self._round = 0
+
+    def __init__(self, round=0, winresult=Result.tie, armypoints=1000, controlpoints=10):
+        #self.player = player
+        self.round = round
+        self.result = winresult
+        self.armypoints = armypoints
+        self.controlpoints = controlpoints
+
+    def __str__(self):
+        return json.dumps(self, self.__dict__)
+
+    def __repr__(self):
+        return repr((self.round, self.result, self.armypoints, self.controlpoints))
+
+
+class GameResult(object):
+    """Represents the result of a game between two players (Pairing) """
+    pass
 
 
 class Pairing(object):
@@ -58,13 +83,41 @@ class PairingManager(object):
         return newpairings
 
 
+class Round(object):
+    """Round of a tournament.
+
+        _pairings: list() of the round's pairings
+        roundnum: round number
+
+    """
+
+    def __init__(self, roundnum):
+        self._pairings = list()
+        self.roundnum = roundnum
+        pass
+
+    @property
+    def pairings(self):
+        return self._pairings
+
+    @pairings.setter
+    def pairings(self, pairings):
+        self._pairings = pairings
+
+
 class Tournament(object):
     """Represents a tournament
+
+        numrounds: number of rounds (also size of _rounds)
+        _players: list() of players
+        _rounds: list() of rounds
+        pairingmanager: the PairingManager
+
     """
-    def __init__(self, numrounds):
+    def __init__(self, numrounds=3, playerlist=list()):
         self.numrounds = numrounds
-        self._players = list()
-        self._rounds = {i:Round(i) for i in range(1,numrounds+1)}
+        self._players = playerlist
+        self._rounds = {i: Round(i) for i in range(1,numrounds+1)}
         self.pairingmanager = PairingManager()
 
     @property
@@ -92,12 +145,15 @@ class Tournament(object):
         return self._rounds[roundnum].pairings
 
 
-
-playerlist = [ Player(i) for i in string.ascii_uppercase[:9] ] # create 8 players
+playerlist = [Player(i) for i in string.ascii_uppercase[:9]]  # create 9 players
 
 t = Tournament(3)
 t.players = playerlist
-pair = t.pairround(1)
 
-for p in pair:
-    print(*p)
+p1 = playerlist[0]
+p1.results.append( PlayerResult(round=1, winresult=Result.win, armypoints=14, controlpoints=3))
+p1.results.append( PlayerResult(round=2, winresult=Result.win, armypoints=13, controlpoints=5))
+p1.results.append( PlayerResult(round=3, winresult=Result.win, armypoints=3, controlpoints=0))
+
+print(p1.results)
+print(p1.resultsummary())
