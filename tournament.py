@@ -106,7 +106,7 @@ class PairingManager(object):
         if firstround:
             shuffle(templist)
         newpairings = grouper(2, templist, Player(name="Buy"))
-        return newpairings
+        return [pairing for pairing in newpairings]
 
 
 class Round(object):
@@ -191,8 +191,8 @@ playerlist = [Player("Player" + i) for i in string.ascii_uppercase[:5]]  # creat
 t = Tournament(3)
 t.players.extend(playerlist)
 
-for p in t.startround(1):
-    print(p)
+t.startround(1)
+
 
 #pairings = PairingManager.makepairings(t.players)
 
@@ -205,11 +205,11 @@ for p in t.startround(1):
 
 #pairs = [p for p in pairings]
 #print(pairs)
-for p in t.pairround(2):
-    print(p)
-for p in t.pairround(3):
-    print(p)
+t.pairround(2)
+t.pairround(3)
 
+for roundnum, round in t._rounds.items():
+    print( roundnum, round.pairings )
 """
 p1 = playerlist[0]
 p2 = playerlist[1]
