@@ -6,6 +6,23 @@ from random import shuffle
 from enum import Enum
 from itertools import zip_longest
 
+"""
+    Create a Tournament
+        Determine pairing strategy & format
+    Add a list of players
+    Start the Tournament
+        Start the first round
+            Pair the first round
+            Play the games & record the results
+            Conclude the first round, tabulate the results
+        Start the next round
+            Pair the round
+            Play the games & record the results
+            Conclude the round, tabulate the results
+            Repeat
+    Tabulate the results
+"""
+
 
 def grouper(n, iterable, fillvalue=None):
     """grouper(3, 'ABCDEFG', 'x') --> ABC DEF Gxx"""
@@ -86,7 +103,8 @@ class Pairing(object):
         self.result = tuple()
 
     def __repr__(self):
-        return (repr(self.players[0], repr(self.player[1])))
+        return repr(self.players)
+
 
 class PairingManager(object):
     """Pairing manager will pair players by various factors.
@@ -103,10 +121,15 @@ class PairingManager(object):
             Prevent pairing in first round based on locale
         """
         templist = players.copy()
+
         if firstround:
             shuffle(templist)
-        newpairings = grouper(2, templist, Player(name="Buy"))
-        return [pairing for pairing in newpairings]
+        else:
+            #sort the list by some attribute of player
+            pass
+        itertuples = grouper(2, templist, Player(name="Buy"))
+        pairings = [Pairing(player1, player2) for player1, player2 in itertuples]
+        return pairings
 
 
 class Round(object):
@@ -114,7 +137,6 @@ class Round(object):
 
         _pairings: list() of the round's pairings
         roundnum: round number
-
     """
 
     def __init__(self, roundnum):
@@ -126,9 +148,9 @@ class Round(object):
     def pairings(self):
         return self._pairings
 
-    @pairings.setter
-    def pairings(self, pairings):
-        self._pairings = pairings
+    def addpairing(self, pairing):
+        assert isinstance(pairing, Pairing), "Must be a Pairing object"
+        self._pairings.append(pairing)
 
 
 class Tournament(object):
@@ -138,7 +160,6 @@ class Tournament(object):
         _players: list() of players
         _rounds: list() of rounds
         pairingmanager: the PairingManager
-
     """
 
     def __init__(self, numrounds=3):
@@ -157,8 +178,6 @@ class Tournament(object):
         return self._rounds
 
     def startround(self, roundnum):
-        """
-        """
         assert (0 < roundnum) and (roundnum <= self.numrounds), "Round {number} does not exist".format(number=roundnum)
         self.currentround = self._rounds[roundnum]
         return self.pairround(roundnum)
@@ -166,23 +185,30 @@ class Tournament(object):
     def endcurrentround(self):
         self.__endround(self.currentround)
 
-    def __endround(self, roundnum):
-        """Update SOS for the round and set next round
-
+    #todo: c
+    def __endround(self, round):
+        """End the round and calculate the player's stats
         """
         #update SOS for each player
-        assert (0 < roundnum) and (roundnum <= self.numrounds), "Round {number} does not exist".format(number=roundnum)
+        assert round in self._rounds.values(), "Round does not exist"
         for player in playerlist:
+            # for each opponent up to the current round, get the opponent's record
             #todo: calculate SOS
             pass
         if roundnum < self.numrounds:
             self.currentround += roundnum
 
     def pairround(self, roundnum):
+        """Use the PairingManager to pair the round
+
+            roundnum(int): number of the round to pair
+        """
         assert (0 < roundnum) and (roundnum <= self.numrounds), "Round {number} does not exist".format(number=roundnum)
 
         print("Pairing round:", roundnum)
-        self._rounds[roundnum].pairings = self.pairingmanager.makepairings(self.players, roundnum == 1)
+        iterpairings = self.pairingmanager.makepairings(self.players, roundnum == 1)  # iterable of the pairs
+        for pair in iterpairings:
+            self._rounds[roundnum].addpairing(pair)
         return self._rounds[roundnum].pairings
 
 
@@ -192,11 +218,13 @@ t = Tournament(3)
 t.players.extend(playerlist)
 
 t.startround(1)
+roundonepairings = t.rounds[1].pairings
 
+[print(p) for p in roundonepairings]
 
-#pairings = PairingManager.makepairings(t.players)
+t.endcurrentround()
 
-#print([p for p in pairings])
+#t.startround(2)
 
 #pairings = PairingManager.makepairings(t.players, firstround=True)
 
@@ -205,8 +233,8 @@ t.startround(1)
 
 #pairs = [p for p in pairings]
 #print(pairs)
-t.pairround(2)
-t.pairround(3)
+#t.pairround(2)
+#t.pairround(3)
 
 for roundnum, round in t._rounds.items():
     print( roundnum, round.pairings )
